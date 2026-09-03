@@ -1,4 +1,4 @@
-name: Build APK Cepat
+name: Build APK
 
 on:
   workflow_dispatch:
@@ -10,36 +10,97 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Create HTML
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Create HTML and Build APK
         run: |
+          # BUAT FILE HTML
           cat > index.html << 'EOF'
           <!DOCTYPE html>
-          <html>
+          <html lang="id">
           <head>
               <meta charset="UTF-8">
               <meta name="viewport" content="width=device-width, initial-scale=1.0">
               <title>Hallo Dunia</title>
               <style>
-                  body{display:flex;justify-content:center;align-items:center;min-height:100vh;background:linear-gradient(135deg,#667eea,#764ba2);font-family:sans-serif;margin:0}
-                  h1{color:#fff;font-size:4rem;text-shadow:0 4px 20px rgba(0,0,0,0.3)}
+                  * { margin: 0; padding: 0; box-sizing: border-box; }
+                  body {
+                      min-height: 100vh;
+                      display: flex;
+                      justify-content: center;
+                      align-items: center;
+                      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                      font-family: Arial, sans-serif;
+                  }
+                  .container {
+                      text-align: center;
+                      padding: 3rem 4rem;
+                      background: rgba(255,255,255,0.15);
+                      backdrop-filter: blur(12px);
+                      border-radius: 24px;
+                      box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+                  }
+                  h1 {
+                      font-size: 4.5rem;
+                      color: #fff;
+                      text-shadow: 0 4px 20px rgba(0,0,0,0.3);
+                      animation: bounce 2s infinite;
+                  }
+                  .subtitle {
+                      margin-top: 1rem;
+                      font-size: 1.2rem;
+                      color: rgba(255,255,255,0.8);
+                  }
+                  @keyframes bounce {
+                      0%, 100% { transform: translateY(0); }
+                      50% { transform: translateY(-10px); }
+                  }
               </style>
           </head>
-          <body><h1>🌍 Hallo Dunia!</h1></body>
+          <body>
+              <div class="container">
+                  <h1>🌍 Hallo Dunia!</h1>
+                  <p class="subtitle">✦ Selamat datang ✦</p>
+              </div>
+          </body>
           </html>
           EOF
 
-      - name: Build APK with PWA Builder
-        run: |
-          # Install PWABuilder CLI
-          npm install -g @pwabuilder/cli
+          echo "✅ File index.html dibuat"
+          ls -la index.html
+
+          # Setup Capacitor
+          mkdir -p web
+          cp index.html web/
+          
+          npm init -y
+          npm install @capacitor/core @capacitor/cli @capacitor/android
+          
+          npx cap init HalloDunia com.hallodunia.app --web-dir=web
+          npx cap add android
+          npx cap sync android
           
           # Build APK
-          pwabuilder build --web-dir=. --platform android
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+          
+          echo "✅ APK berhasil dibuild"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: HalloDunia
-          path: |
-            **/*.apk
-            **/*.aab
+          name: HalloDunia-App
+          path: android/app/build/outputs/apk/debug/app-debug.apk
