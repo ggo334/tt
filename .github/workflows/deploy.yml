@@ -1,42 +1,55 @@
-name: Deploy ke GitHub Pages
+name: Build APK from HTML
 
 on:
   push:
-    branches:
-      - main  # atau master, sesuaikan dengan branch utama Anda
-  workflow_dispatch:  # Memungkinkan run manual
-
-# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-# Allow only one concurrent deployment
-concurrency:
-  group: "pages"
-  cancel-in-progress: false
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch:  # Bisa di-run manual
 
 jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  build-apk:
     runs-on: ubuntu-latest
     
     steps:
+      # 1. Checkout kode
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+      # 2. Setup Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          # Upload seluruh folder project
-          path: '.'
+          node-version: '20'
 
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      # 3. Install Capacitor
+      - name: Install Capacitor
+        run: |
+          npm install -g @capacitor/cli
+          npm install -g @capacitor/android
+
+      # 4. Inisialisasi project Capacitor
+      - name: Init Capacitor Project
+        run: |
+          npx cap init HalloDunia com.example.hallodunia --web-dir=.
+          npx cap add android
+
+      # 5. Build APK menggunakan Android SDK
+      - name: Build Android APK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools platforms;android-34 build-tools;34.0.0
+
+      - name: Build APK
+        run: |
+          npx cap sync android
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      # 6. Upload APK sebagai artifact
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: hallo-dunia-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
