@@ -1,4 +1,4 @@
-name: Build APK
+name: Build Android APK
 
 on:
   push:
@@ -11,37 +11,39 @@ jobs:
     
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-      
-      - name: Setup Java & Android
+
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
-      
+
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Build Android App
+      - name: Build APK
         run: |
+          # Buat folder web
+          mkdir -p web
+          cp index.html web/
+          
           # Init project
           npm init -y
           npm install @capacitor/core @capacitor/cli @capacitor/android
           
-          # Setup Capacitor
-          npx cap init HalloDunia com.hallodunia.app --web-dir=.
+          # Setup Capacitor dengan webDir = web
+          npx cap init HalloDunia com.hallodunia.app --web-dir=web
           npx cap add android
           
-          # Copy index.html ke assets
-          mkdir -p android/app/src/main/assets/public
-          cp index.html android/app/src/main/assets/public/
+          # Sync
+          npx cap sync android
           
           # Build
-          npx cap sync android
           cd android
           chmod +x gradlew
           ./gradlew assembleDebug
@@ -49,5 +51,5 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: HalloDunia
-          path: android/app/build/outputs/apk/debug/*.apk
+          name: app-debug
+          path: android/app/build/outputs/apk/debug/app-debug.apk
