@@ -1,8 +1,6 @@
-name: Build Android APK
+name: Build APK (Auto Generate HTML)
 
 on:
-  push:
-    branches: [ main ]
   workflow_dispatch:
 
 jobs:
@@ -28,6 +26,61 @@ jobs:
 
       - name: Build APK
         run: |
+          # BUAT FILE HTML LANGSUNG
+          cat > index.html << 'EOF'
+          <!DOCTYPE html>
+          <html lang="id">
+          <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>Hallo Dunia</title>
+              <style>
+                  * { margin: 0; padding: 0; box-sizing: border-box; }
+                  body {
+                      min-height: 100vh;
+                      display: flex;
+                      justify-content: center;
+                      align-items: center;
+                      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                      font-family: Arial, sans-serif;
+                  }
+                  .container {
+                      text-align: center;
+                      padding: 3rem 4rem;
+                      background: rgba(255,255,255,0.15);
+                      backdrop-filter: blur(12px);
+                      border-radius: 24px;
+                      box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+                  }
+                  h1 {
+                      font-size: 4.5rem;
+                      color: #fff;
+                      text-shadow: 0 4px 20px rgba(0,0,0,0.3);
+                      animation: bounce 2s infinite;
+                  }
+                  .subtitle {
+                      margin-top: 1rem;
+                      font-size: 1.2rem;
+                      color: rgba(255,255,255,0.8);
+                  }
+                  @keyframes bounce {
+                      0%, 100% { transform: translateY(0); }
+                      50% { transform: translateY(-10px); }
+                  }
+              </style>
+          </head>
+          <body>
+              <div class="container">
+                  <h1>🌍 Hallo Dunia!</h1>
+                  <p class="subtitle">✦ Selamat datang ✦</p>
+              </div>
+          </body>
+          </html>
+          EOF
+          
+          echo "File index.html berhasil dibuat!"
+          cat index.html
+          
           # Buat folder web
           mkdir -p web
           cp index.html web/
@@ -36,7 +89,7 @@ jobs:
           npm init -y
           npm install @capacitor/core @capacitor/cli @capacitor/android
           
-          # Setup Capacitor dengan webDir = web
+          # Setup Capacitor
           npx cap init HalloDunia com.hallodunia.app --web-dir=web
           npx cap add android
           
@@ -51,5 +104,5 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug
+          name: HalloDunia-App
           path: android/app/build/outputs/apk/debug/app-debug.apk
