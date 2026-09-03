@@ -24,83 +24,181 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Create HTML and Build APK
+      - name: Create Android App
         run: |
-          # BUAT FILE HTML
-          cat > index.html << 'EOF'
-          <!DOCTYPE html>
-          <html lang="id">
-          <head>
+          echo "📝 Membuat file index.html..."
+          
+          # Buat index.html jika belum ada
+          if [ ! -f "index.html" ]; then
+            cat > index.html << 'EOF'
+            <!DOCTYPE html>
+            <html>
+            <head>
               <meta charset="UTF-8">
               <meta name="viewport" content="width=device-width, initial-scale=1.0">
               <title>Hallo Dunia</title>
               <style>
-                  * { margin: 0; padding: 0; box-sizing: border-box; }
-                  body {
-                      min-height: 100vh;
-                      display: flex;
-                      justify-content: center;
-                      align-items: center;
-                      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                      font-family: Arial, sans-serif;
-                  }
-                  .container {
-                      text-align: center;
-                      padding: 3rem 4rem;
-                      background: rgba(255,255,255,0.15);
-                      backdrop-filter: blur(12px);
-                      border-radius: 24px;
-                      box-shadow: 0 25px 50px rgba(0,0,0,0.3);
-                  }
-                  h1 {
-                      font-size: 4.5rem;
-                      color: #fff;
-                      text-shadow: 0 4px 20px rgba(0,0,0,0.3);
-                      animation: bounce 2s infinite;
-                  }
-                  .subtitle {
-                      margin-top: 1rem;
-                      font-size: 1.2rem;
-                      color: rgba(255,255,255,0.8);
-                  }
-                  @keyframes bounce {
-                      0%, 100% { transform: translateY(0); }
-                      50% { transform: translateY(-10px); }
-                  }
+                *{margin:0;padding:0}
+                body{display:flex;justify-content:center;align-items:center;min-height:100vh;background:linear-gradient(135deg,#667eea,#764ba2);font-family:Arial,sans-serif}
+                h1{color:#fff;font-size:4rem;text-shadow:0 4px 20px rgba(0,0,0,0.3);text-align:center}
+                .emoji{font-size:5rem;display:block;margin-bottom:1rem}
               </style>
-          </head>
-          <body>
-              <div class="container">
-                  <h1>🌍 Hallo Dunia!</h1>
-                  <p class="subtitle">✦ Selamat datang ✦</p>
+            </head>
+            <body>
+              <div>
+                <span class="emoji">🌍</span>
+                <h1>Hallo Dunia!</h1>
               </div>
-          </body>
-          </html>
+            </body>
+            </html>
+            EOF
+          fi
+          
+          echo "📁 Membuat project Android..."
+          
+          # Buat struktur folder Android
+          mkdir -p app/src/main/assets
+          mkdir -p app/src/main/java/com/hallodunia/app
+          mkdir -p app/src/main/res/layout
+          mkdir -p app/src/main/res/values
+          
+          # Copy index.html ke assets
+          cp index.html app/src/main/assets/
+          
+          # Buat AndroidManifest.xml
+          cat > app/src/main/AndroidManifest.xml << 'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+              package="com.hallodunia.app">
+              
+              <uses-permission android:name="android.permission.INTERNET" />
+              
+              <application
+                  android:allowBackup="true"
+                  android:icon="@mipmap/ic_launcher"
+                  android:label="Hallo Dunia"
+                  android:theme="@style/Theme.AppCompat.Light.NoActionBar">
+                  
+                  <activity android:name=".MainActivity" android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
+                      </intent-filter>
+                  </activity>
+              </application>
+          </manifest>
           EOF
-
-          echo "✅ File index.html dibuat"
-          ls -la index.html
-
-          # Setup Capacitor
-          mkdir -p web
-          cp index.html web/
           
-          npm init -y
-          npm install @capacitor/core @capacitor/cli @capacitor/android
+          # Buat MainActivity.java
+          cat > app/src/main/java/com/hallodunia/app/MainActivity.java << 'EOF'
+          package com.hallodunia.app;
           
-          npx cap init HalloDunia com.hallodunia.app --web-dir=web
-          npx cap add android
-          npx cap sync android
+          import android.os.Bundle;
+          import android.webkit.WebView;
+          import android.webkit.WebViewClient;
+          import androidx.appcompat.app.AppCompatActivity;
           
-          # Build APK
-          cd android
+          public class MainActivity extends AppCompatActivity {
+              @Override
+              protected void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+                  setContentView(R.layout.activity_main);
+                  
+                  WebView webView = findViewById(R.id.webView);
+                  webView.setWebViewClient(new WebViewClient());
+                  webView.getSettings().setJavaScriptEnabled(true);
+                  webView.loadUrl("file:///android_asset/index.html");
+              }
+          }
+          EOF
+          
+          # Buat activity_main.xml
+          cat > app/src/main/res/layout/activity_main.xml << 'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <WebView xmlns:android="http://schemas.android.com/apk/res/android"
+              android:id="@+id/webView"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent" />
+          EOF
+          
+          # Buat build.gradle (app)
+          cat > app/build.gradle << 'EOF'
+          apply plugin: 'com.android.application'
+          
+          android {
+              namespace 'com.hallodunia.app'
+              compileSdk 34
+              
+              defaultConfig {
+                  applicationId "com.hallodunia.app"
+                  minSdk 21
+                  targetSdk 34
+                  versionCode 1
+                  versionName "1.0"
+              }
+              
+              buildTypes {
+                  release {
+                      minifyEnabled false
+                  }
+              }
+          }
+          
+          dependencies {
+              implementation 'androidx.appcompat:appcompat:1.6.1'
+          }
+          EOF
+          
+          # Buat build.gradle (root)
+          cat > build.gradle << 'EOF'
+          buildscript {
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+              dependencies {
+                  classpath 'com.android.tools.build:gradle:8.1.0'
+              }
+          }
+          
+          allprojects {
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+          EOF
+          
+          # Buat settings.gradle
+          cat > settings.gradle << 'EOF'
+          rootProject.name = "HalloDunia"
+          include ':app'
+          EOF
+          
+          # Buat gradle wrapper
+          mkdir -p gradle/wrapper
+          echo "distributionUrl=https://services.gradle.org/distributions/gradle-8.0-bin.zip" > gradle/wrapper/gradle-wrapper.properties
+          
+          # Download gradle-wrapper.jar
+          curl -L https://raw.githubusercontent.com/gradle/gradle/v8.0.0/gradle/wrapper/gradle-wrapper.jar -o gradle/wrapper/gradle-wrapper.jar
+          
+          # Buat gradlew
+          cat > gradlew << 'EOF'
+          #!/bin/bash
+          exec java -cp gradle/wrapper/gradle-wrapper.jar org.gradle.wrapper.GradleWrapperMain "$@"
+          EOF
           chmod +x gradlew
-          ./gradlew assembleDebug
           
-          echo "✅ APK berhasil dibuild"
+          echo "✅ Project Android selesai dibuat"
+
+      - name: Build APK
+        run: |
+          echo "🔨 Membangun APK..."
+          ./gradlew assembleDebug
+          echo "✅ APK berhasil dibangun!"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: HalloDunia-App
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: HalloDunia
+          path: app/build/outputs/apk/debug/*.apk
