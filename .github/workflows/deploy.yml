@@ -1,55 +1,53 @@
-name: Build APK from HTML
+name: Build APK
 
 on:
   push:
-    branches: [ "main", "master" ]
-  pull_request:
-    branches: [ "main", "master" ]
-  workflow_dispatch:  # Bisa di-run manual
+    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
-  build-apk:
+  build:
     runs-on: ubuntu-latest
     
     steps:
-      # 1. Checkout kode
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      # 2. Setup Node.js
+      - uses: actions/checkout@v4
+      
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-
-      # 3. Install Capacitor
-      - name: Install Capacitor
-        run: |
-          npm install -g @capacitor/cli
-          npm install -g @capacitor/android
-
-      # 4. Inisialisasi project Capacitor
-      - name: Init Capacitor Project
-        run: |
-          npx cap init HalloDunia com.example.hallodunia --web-dir=.
-          npx cap add android
-
-      # 5. Build APK menggunakan Android SDK
-      - name: Build Android APK
-        uses: android-actions/setup-android@v3
+          node-version: '18'
+      
+      - name: Setup Java & Android
+        uses: actions/setup-java@v4
         with:
-          packages: platform-tools platforms;android-34 build-tools;34.0.0
+          distribution: 'temurin'
+          java-version: '17'
+      
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
 
-      - name: Build APK
+      - name: Build Android App
         run: |
+          # Init project
+          npm init -y
+          npm install @capacitor/core @capacitor/cli @capacitor/android
+          
+          # Setup Capacitor
+          npx cap init HalloDunia com.hallodunia.app --web-dir=.
+          npx cap add android
+          
+          # Copy index.html ke assets
+          mkdir -p android/app/src/main/assets/public
+          cp index.html android/app/src/main/assets/public/
+          
+          # Build
           npx cap sync android
           cd android
           chmod +x gradlew
           ./gradlew assembleDebug
 
-      # 6. Upload APK sebagai artifact
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: hallo-dunia-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: HalloDunia
+          path: android/app/build/outputs/apk/debug/*.apk
