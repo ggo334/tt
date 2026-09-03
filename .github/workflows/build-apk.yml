@@ -1,0 +1,45 @@
+name: Build APK Cepat
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create HTML
+        run: |
+          cat > index.html << 'EOF'
+          <!DOCTYPE html>
+          <html>
+          <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>Hallo Dunia</title>
+              <style>
+                  body{display:flex;justify-content:center;align-items:center;min-height:100vh;background:linear-gradient(135deg,#667eea,#764ba2);font-family:sans-serif;margin:0}
+                  h1{color:#fff;font-size:4rem;text-shadow:0 4px 20px rgba(0,0,0,0.3)}
+              </style>
+          </head>
+          <body><h1>🌍 Hallo Dunia!</h1></body>
+          </html>
+          EOF
+
+      - name: Build APK with PWA Builder
+        run: |
+          # Install PWABuilder CLI
+          npm install -g @pwabuilder/cli
+          
+          # Build APK
+          pwabuilder build --web-dir=. --platform android
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: HalloDunia
+          path: |
+            **/*.apk
+            **/*.aab
